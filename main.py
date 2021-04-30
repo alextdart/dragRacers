@@ -1,6 +1,6 @@
 import pygame
 import pygame.freetype
-import random
+# import random
 
 pygame.init()
 
@@ -9,11 +9,38 @@ window = pygame.display.set_mode((1280, 720))
 pygame.display.set_caption("Alex Dart's Drag Racers")
 
 # Globals
-white = (255, 255, 255)
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
 clock = pygame.time.Clock()
 top_pos = [10, 220]
 bot_pos = [10, 420]
 done = False
+font = pygame.freetype.Font('resources/fonts/joystix monospace.ttf', 60)
+
+# Setting starting variables.
+scene = "Title"
+controllable = False
+last_click = 0
+volume = 50
+
+# Helper Functions
+
+
+def hover_check(b, mouse_pos):
+    if b.rect.left < mouse_pos[0] < b.rect.right and b.rect.top < mouse_pos[1] < b.rect.bottom:
+        return True
+    else:
+        return False
+
+
+def click_check(b, mouse_pos, mouse_btns, recent_click_time):
+    current_tick = pygame.time.get_ticks()
+    if b.rect.left < mouse_pos[0] < b.rect.right and b.rect.top < mouse_pos[1] < b.rect.bottom:
+        if mouse_btns[0] == 1 and ((current_tick - 100) > recent_click_time):
+            button_sound.play()
+            return True
+    else:
+        return False
 
 # Creating Classes
 
@@ -26,9 +53,6 @@ class Background(pygame.sprite.Sprite):
         self.rect.left, self.rect.top = location
 
 
-""" The button class """
-
-
 class Button(pygame.sprite.Sprite):
     def __init__(self, image_file, image_hover, location):
         pygame.sprite.Sprite.__init__(self)
@@ -37,6 +61,8 @@ class Button(pygame.sprite.Sprite):
         self.image_hover = pygame.image.load(image_hover)
         self.image = pygame.image.load(image_file)
         self.rect = self.image.get_rect()
+        self.width = self.rect.width
+        self.height = self.rect.height
         self.rect.left, self.rect.top = location
 
     # Adds hovering functionality to buttons
@@ -60,9 +86,6 @@ class Button(pygame.sprite.Sprite):
         self.image = self.image_file
 
 
-""" Selectors are like buttons with 3 different options. """
-
-
 class Selector(pygame.sprite.Sprite):
     def __init__(self, image0, image1, image2, location):
         pygame.sprite.Sprite.__init__(self)
@@ -82,18 +105,12 @@ class Selector(pygame.sprite.Sprite):
             self.image = self.image2
 
 
-""" Images are just like backgrounds. Really, I didn't need to separate them. """
-
-
 class Image(pygame.sprite.Sprite):
     def __init__(self, image_file, location):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.image.load(image_file)
         self.rect = self.image.get_rect()
         self.rect.left, self.rect.top = location
-
-
-""" The player """
 
 
 class Player(pygame.sprite.Sprite):
@@ -191,26 +208,30 @@ class Opponent(pygame.sprite.Sprite):
 
 # Sounds
 music = pygame.mixer.music.load('resources/sounds/music.mp3')
-button = pygame.mixer.Sound('resources/sounds/button.wav')
+button_sound = pygame.mixer.Sound('resources/sounds/button.wav')
 
 # Backgrounds
 bg_title = Background('resources/images/backgrounds/bg_title.png', [0, 0])
 
 # Buttons
-button_start = Button('resources/images/buttons/button_play.png',
-                      'resources/images/buttons/button_play_hover.png', [340, 600])
-button_options = Button('resources/images/buttons/button_options.png',
-                        'resources/images/buttons/button_options_hover.png', [670, 600])
+btn_title_start = Button('resources/images/buttons/btn_play.png',
+                         'resources/images/buttons/btn_play_h.png', [340, 600])
+btn_title_opt = Button('resources/images/buttons/btn_title_opt.png',
+                       'resources/images/buttons/btn_title_opt_h.png', [670, 600])
+
+btn_opt_back = Button('resources/images/buttons/btn_opt_back.png',
+                      'resources/images/buttons/btn_opt_back_h.png', [30, 30])
+btn_opt_vol_up = Button('resources/images/buttons/btn_opt_plus.png',
+                        'resources/images/buttons/btn_opt_plus_h.png', [320, 400])
+btn_opt_vol_dwn = Button('resources/images/buttons/btn_opt_minus.png',
+                         'resources/images/buttons/btn_opt_minus_h.png', [860, 400])
 
 # Images
 # image_title = Image('resources/images/image_title.png', [0, 0])
 
-# Setting starting variables.
-scene = "Title"
-controllable = False
-
 # Starting music (-1 makes it play forever).
 pygame.mixer.music.play(-1)
+pygame.mixer.music.set_volume(volume)
 
 while not done:
 
@@ -225,42 +246,63 @@ while not done:
 
     if scene == "Title":
 
-        # Checking for Start Button Hover
-        if 340 < mouse[0] < 610 and 600 < mouse[1] < 700:
-            hovering_play = True
-            if pressed[0] == 1:
-                scene = "Selection"
-                button.play()
-        else:
-            hovering_play = False
+        # Button Click Checks
+        if click_check(btn_title_start, mouse, pressed, last_click):
+            last_click = pygame.time.get_ticks()
+            scene = "Selection"
 
-        # Checking for Options Button Hover
-        if 670 < mouse[0] < 920 and 600 < mouse[1] < 700:
-            hovering_options = True
-            if pressed[0] == 1:
-                scene = "Options"
-                button.play()
-        else:
-            hovering_options = False
+        if click_check(btn_title_opt, mouse, pressed, last_click):
+            last_click = pygame.time.get_ticks()
+            scene = "Options"
 
         # Loading Static Images
         window.blit(bg_title.image, bg_title.rect)
 
         # Loading Dynamic Images
-        button_start.hover(hovering_play)
-        button_options.hover(hovering_options)
-        window.blit(button_start.image, button_start.rect)
-        window.blit(button_options.image, button_options.rect)
+        btn_title_start.hover(hover_check(btn_title_start, mouse))
+        btn_title_opt.hover(hover_check(btn_title_opt, mouse))
+        window.blit(btn_title_start.image, btn_title_start.rect)
+        window.blit(btn_title_opt.image, btn_title_opt.rect)
 
     elif scene == "Selection":
 
         # Base Fill
-        window.fill(white)
+        window.fill(WHITE)
 
     elif scene == "Options":
 
         # Base Fill
-        window.fill(white)
+        window.fill(WHITE)
+
+        # Loading Static Images and Text
+        font.render_to(window, (440, 50), "Options:", BLACK)
+
+        # Button Click Checks
+        if click_check(btn_opt_back, mouse, pressed, last_click):
+            last_click = pygame.time.get_ticks()
+            scene = "Title"
+
+        if click_check(btn_opt_vol_up, mouse, pressed, last_click) and volume < 100:
+            last_click = pygame.time.get_ticks()
+            volume += 5
+            pygame.mixer.music.set_volume(volume / 100)
+
+        if click_check(btn_opt_vol_dwn, mouse, pressed, last_click) and volume > 0:
+            last_click = pygame.time.get_ticks()
+            volume -= 5
+            pygame.mixer.music.set_volume(volume / 100)
+
+        # Loading Dynamic Images
+        vol_text = font.render("Vol: "+str(volume)+"%", BLACK)
+        font.render_to(window, (420, 430), "Vol: "+str(volume)+"%", BLACK)
+
+        # Drawing and Updating Buttons
+        btn_opt_back.hover(hover_check(btn_opt_back, mouse))
+        window.blit(btn_opt_back.image, btn_opt_back.rect)
+        btn_opt_vol_up.hover(hover_check(btn_opt_vol_up, mouse))
+        window.blit(btn_opt_vol_up.image, btn_opt_vol_up.rect)
+        btn_opt_vol_dwn.hover(hover_check(btn_opt_vol_dwn, mouse))
+        window.blit(btn_opt_vol_dwn.image, btn_opt_vol_dwn.rect)
 
     elif scene == "Game":
 
@@ -272,7 +314,7 @@ while not done:
     elif scene == "Post-Race":
 
         # Loading Static Images (Background).
-        window.fill(white)
+        window.fill(WHITE)
 
     # Update screen, 60fps
     pygame.display.flip()
