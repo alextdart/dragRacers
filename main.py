@@ -22,6 +22,10 @@ scene = "Title"
 controllable = False
 last_click = 0
 volume = 50
+multiplayer = True
+sp_car_choice = 0
+mp_car1_choice = 0
+mp_car2_choice = 0
 
 # Helper Functions
 
@@ -136,7 +140,7 @@ class Player(pygame.sprite.Sprite):
             self.max_gear = 6
             self.nitro_pct = 100
         else:
-            self.image = pygame.image.load('resources/images/sprites/car_red.png')
+            self.image = pygame.image.load('resources/images/sprites/car_green.png')
             self.base_speed = 15
             self.gear_ratio = 1.1
             self.gear = 0
@@ -226,6 +230,31 @@ btn_opt_vol_up = Button('resources/images/buttons/btn_opt_plus.png',
 btn_opt_vol_dwn = Button('resources/images/buttons/btn_opt_minus.png',
                          'resources/images/buttons/btn_opt_minus_h.png', [860, 400])
 
+btn_sel_sp_left = Button('resources/images/backgrounds/275x720blank.png',
+                         'resources/images/backgrounds/275x720blank.png', [365, 0])
+btn_sel_sp_right = Button('resources/images/backgrounds/275x720blank.png',
+                          'resources/images/backgrounds/275x720blank.png', [640, 0])
+btn_sel_mp_left_left = Button('resources/images/backgrounds/275x720blank.png',
+                              'resources/images/backgrounds/275x720blank.png', [25, 0])
+btn_sel_mp_left_right = Button('resources/images/backgrounds/275x720blank.png',
+                               'resources/images/backgrounds/275x720blank.png', [300, 0])
+btn_sel_mp_right_left = Button('resources/images/backgrounds/275x720blank.png',
+                               'resources/images/backgrounds/275x720blank.png', [665, 0])
+btn_sel_mp_right_right = Button('resources/images/backgrounds/275x720blank.png',
+                                'resources/images/backgrounds/275x720blank.png', [940, 0])
+
+# Selectors
+sel_sp_cars = Selector('resources/images/selectors/sel_car1.png',
+                       'resources/images/selectors/sel_car2.png',
+                       'resources/images/selectors/sel_car3.png', [365, 0])
+
+sel_mp_car1 = Selector('resources/images/selectors/sel_car1.png',
+                       'resources/images/selectors/sel_car2.png',
+                       'resources/images/selectors/sel_car3.png', [25, 0])
+sel_mp_car2 = Selector('resources/images/selectors/sel_car1.png',
+                       'resources/images/selectors/sel_car2.png',
+                       'resources/images/selectors/sel_car3.png', [665, 0])
+
 # Images
 # image_title = Image('resources/images/image_title.png', [0, 0])
 
@@ -268,6 +297,66 @@ while not done:
 
         # Base Fill
         window.fill(WHITE)
+
+        if not multiplayer:
+
+            # Button Click Checks
+            if click_check(btn_sel_sp_left, mouse, pressed, last_click):
+                last_click = pygame.time.get_ticks()
+                if sp_car_choice > 0:
+                    sp_car_choice -= 1
+
+                else:
+                    sp_car_choice = 2
+                sel_sp_cars.selection(sp_car_choice)
+
+            if click_check(btn_sel_sp_right, mouse, pressed, last_click):
+                last_click = pygame.time.get_ticks()
+                if sp_car_choice < 2:
+                    sp_car_choice += 1
+                else:
+                    sp_car_choice = 0
+                sel_sp_cars.selection(sp_car_choice)
+
+            window.blit(sel_sp_cars.image, sel_sp_cars.rect)
+
+        else:
+
+            # Button Click Checks
+            if click_check(btn_sel_mp_left_left, mouse, pressed, last_click):
+                last_click = pygame.time.get_ticks()
+                if mp_car1_choice > 0:
+                    mp_car1_choice -= 1
+                else:
+                    mp_car1_choice = 2
+                sel_mp_car1.selection(mp_car1_choice)
+
+            if click_check(btn_sel_mp_left_right, mouse, pressed, last_click):
+                last_click = pygame.time.get_ticks()
+                if mp_car1_choice < 2:
+                    mp_car1_choice += 1
+                else:
+                    mp_car1_choice = 0
+                sel_mp_car1.selection(mp_car1_choice)
+
+            if click_check(btn_sel_mp_right_left, mouse, pressed, last_click):
+                last_click = pygame.time.get_ticks()
+                if mp_car2_choice > 0:
+                    mp_car2_choice -= 1
+                else:
+                    mp_car2_choice = 2
+                sel_mp_car2.selection(mp_car2_choice)
+
+            if click_check(btn_sel_mp_right_right, mouse, pressed, last_click):
+                last_click = pygame.time.get_ticks()
+                if mp_car2_choice < 2:
+                    mp_car2_choice += 1
+                else:
+                    mp_car2_choice = 0
+                sel_mp_car2.selection(mp_car2_choice)
+
+            window.blit(sel_mp_car1.image, sel_mp_car1.rect)
+            window.blit(sel_mp_car2.image, sel_mp_car2.rect)
 
     elif scene == "Options":
 
