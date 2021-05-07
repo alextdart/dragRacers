@@ -21,13 +21,29 @@ font = pygame.freetype.Font('resources/fonts/joystix monospace.ttf', 60)
 scene = "Title"
 controllable = False
 last_click = 0
+last_shift = 0
 volume = 50
 multiplayer = False
 sp_car_choice = 0
 mp_car1_choice = 0
 mp_car2_choice = 0
+pause = 0
+gear_pct = 0
 
 # Helper Functions
+
+
+def get_shift_quality(pct):
+    if pct < 45:
+        return "poor"
+    elif pct < 65:
+        return "okay"
+    elif pct < 85:
+        return "good"
+    elif pct < 95:
+        return "perf"
+    else:
+        return "good"
 
 
 def hover_check(b, mouse_pos):
@@ -123,6 +139,7 @@ class Player(pygame.sprite.Sprite):
 
         self.car = car
         self.speed = 0
+
         self.location = location
 
         if self.car == 0:
@@ -149,21 +166,26 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.left, self.rect.top = self.location
 
-    def upshift(self, quality):
-        if self.gear > self.max_gear:
-            if self.gear == 0:
-                self.gear = 1
-                self.speed = self.base_speed
-            else:
-                self.gear += 1
-                if quality == "poor":
-                    self.speed = self.speed * (self.gear_ratio * 0.2)
-                elif quality == "okay":
-                    self.speed = self.speed * (self.gear_ratio * 0.7)
-                elif quality == "good":
-                    self.speed = self.speed * (self.gear_ratio * 1)
-                elif quality == "perf":
-                    self.speed = self.speed * (self.gear_ratio * 1.3)
+    def upshift(self, quality, recent_shift):
+        current_tick = pygame.time.get_ticks()
+        if (current_tick - 100) > recent_shift:
+            if self.gear < self.max_gear:
+                if self.gear == 0:
+                    self.gear = 1
+                    self.speed = self.base_speed
+                else:
+                    self.gear += 1
+                    if quality == "poor":
+                        self.speed = self.speed * (self.gear_ratio * 0.2)
+                    elif quality == "okay":
+                        self.speed = self.speed * (self.gear_ratio * 0.7)
+                    elif quality == "good":
+                        self.speed = self.speed * (self.gear_ratio * 1)
+                    elif quality == "perf":
+                        self.speed = self.speed * (self.gear_ratio * 1.3)
+
+    def update(self):
+        self.location = [self.location[0]+self.speed, self.location[1]]
 
 
 """ The com class is almost identical to the player class, except with slight random variations based on the difficulty
@@ -262,11 +284,17 @@ sel_mp_car2 = Selector('resources/images/selectors/sel_car1.png',
                        'resources/images/selectors/sel_car3.png', [665, 0])
 
 # Images
-# image_title = Image('resources/images/image_title.png', [0, 0])
+image_shift_bar = Image('resources/images/sprites/shift_bar.png', [0, 0])
+image_shift_slider = Image('resources/images/sprites/shift_slider.png', [20, 675])
 
 # Starting music (-1 makes it play forever).
 pygame.mixer.music.play(-1)
 pygame.mixer.music.set_volume(volume)
+
+# Players
+player = Player(0, top_pos)
+mp_p1 = Player(0, top_pos)
+mp_p2 = Player(0, bot_pos)
 
 while not done:
 
@@ -315,6 +343,7 @@ while not done:
             if click_check(btn_sel_play_sp, mouse, pressed, last_click):
                 last_click = pygame.time.get_ticks()
                 player = Player(sp_car_choice, top_pos)
+                pause = 100
                 scene = "Game"
 
             if click_check(btn_sel_sp_left, mouse, pressed, last_click):
@@ -346,6 +375,7 @@ while not done:
                 last_click = pygame.time.get_ticks()
                 player1 = Player(mp_car1_choice, top_pos)
                 player2 = Player(mp_car2_choice, bot_pos)
+                pause = 100
                 scene = "Game"
 
             if click_check(btn_sel_mp_left_left, mouse, pressed, last_click):
@@ -429,11 +459,38 @@ while not done:
         # Base Fill
         window.fill(WHITE)
 
-        if not multiplayer:
+        if not multiplayer:  # single player
 
-            window.blit(player.image, player.rect)
+            if pause > 1:
+                pause -= 1
 
-        else:
+            elif pause == 1:
+
+                player.upshift("good", last_shift)
+                pause = 0
+
+            if pause == 0:
+
+                if gear_pct < 100:
+                    gear_pct += 0.5
+                    image_shift_slider.rect.left = (gear_pct/100)*1280
+                else:
+                    player.blow_up()
+
+                # Checks which keys are pressed, makes a list.
+                keys = pygame.key.get_pressed()
+
+                if keys[pygame.K_SPACE]:
+                    player.upshift(get_shift_quality(gear_pct), last_shift)
+                    last_shift = pygame.time.get_ticks()
+                    gear_pct = 0
+
+            font.render_to(window, (420, 430), "Gear: " + str(player.gear), BLACK)
+            window.blit(image_shift_bar.image, image_shift_bar.rect)
+            window.blit(image_shift_slider.image, image_shift_slider.rect)
+            # window.blit(player.image, player.rect)
+
+        else:  # multiplayer
 
             window.blit(player1.image, player1.rect)
             window.blit(player2.image, player2.rect)
